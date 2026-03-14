@@ -1,0 +1,47 @@
+# Node modules
+node_modules/
+apps/server/node_modules/
+apps/web/node_modules/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+apps/server/.env
+apps/server/.env.test
+apps/web/.env
+apps/web/.env.local
+apps/web/.env.development.local
+apps/web/.env.test.local
+apps/web/.env.production.local
+
+# Vercel Deployment cache
+.vercel/
+
+# Next.js Build Output
+apps/web/.next/
+apps/web/out/
+
+# TypeScript / Build output
+apps/server/dist/
+apps/server/build/
+*.tsbuildinfo
+apps/server/*.tsbuildinfo
+apps/web/*.tsbuildinfo
+
+# Coverage
+coverage/
+apps/server/coverage/
+apps/web/coverage/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# MacOS
+.DS_Store
