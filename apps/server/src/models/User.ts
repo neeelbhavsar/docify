@@ -8,7 +8,10 @@ export interface IUser extends Document {
     password: string;
     createdAt: Date;
     updatedAt: Date;
+    resetPasswordToken: string;
+    resetPasswordExpires: Date;
     comparePassword(candidatePassword: string): Promise<boolean>;
+    getResetPasswordToken(): string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -34,6 +37,8 @@ const userSchema = new Schema<IUser>(
             minlength: [8, 'Password must be at least 8 characters'],
             select: false,
         },
+        resetPasswordToken: String,
+        resetPasswordExpires: Date,
     },
     {
         timestamps: true,
@@ -55,10 +60,30 @@ userSchema.methods.comparePassword = async function (
     return bcrypt.compare(candidatePassword, this.password);
 };
 
+// Generate reset password token
+userSchema.methods.getResetPasswordToken = function (): string {
+    const crypto = require('crypto');
+    // Generate token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+
+    // Hash token and set to resetPasswordToken field
+    this.resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+    // Set expire field to 15 minutes
+    this.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+    return resetToken;
+};
+
 // Remove password from JSON output
 userSchema.set('toJSON', {
     transform: (_doc, ret) => {
         delete (ret as unknown as Record<string, unknown>).password;
+        delete (ret as unknown as Record<string, unknown>).resetPasswordToken;
+        delete (ret as unknown as Record<string, unknown>).resetPasswordExpires;
         return ret;
     },
 });
