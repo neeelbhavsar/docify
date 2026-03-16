@@ -12,6 +12,9 @@ import { errorHandler } from './utils/errors';
 
 const app: Application = express();
 
+// Trust proxy for rate limiting (Vercel)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
