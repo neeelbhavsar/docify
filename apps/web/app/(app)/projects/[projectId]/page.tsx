@@ -463,7 +463,7 @@ function AddCredentialModal({
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Credential Type</label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
                         {CREDENTIAL_TYPES.map((type) => (
                             <button
                                 key={type}
@@ -479,7 +479,7 @@ function AddCredentialModal({
 
                 <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5">Environment</label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {ENVIRONMENTS.map((env) => (
                             <button key={env.value} onClick={() => setSelectedEnv(env.value)}
                                 className="px-2 py-2 rounded-lg border text-center transition-all text-xs font-semibold"
@@ -1248,41 +1248,43 @@ export default function ProjectDetailPage() {
                 <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full blur-2xl animate-float" style={{ background: 'rgba(6,182,212,0.15)' }} />
                 <div className="absolute top-1/2 left-1/3 w-20 h-20 rounded-full blur-2xl animate-float-reverse" style={{ background: 'rgba(99,102,241,0.15)' }} />
 
-                <div className="relative flex items-start gap-4">
-                    <Link href="/dashboard">
-                        <button className="mt-1 p-2 rounded-xl hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all border border-white/10">
-                            <ArrowLeft className="w-4 h-4" />
-                        </button>
-                    </Link>
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Sparkles className="w-4 h-4 text-indigo-400" />
-                            <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Project</span>
-                        </div>
-                        <h1 className="text-2xl font-bold gradient-text">{project.name}</h1>
-                        {project.description && <p className="text-muted-foreground text-sm mt-1 max-w-xl">{project.description}</p>}
-                        <div className="flex items-center gap-3 mt-3 flex-wrap">
-                            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-muted-foreground">
-                                <Users className="w-3 h-3" />{project.members.length} members
-                            </span>
-                            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-muted-foreground">
-                                <Key className="w-3 h-3" />{credentials.length} credentials
-                            </span>
-                            <span className="tag-pill" style={{ background: 'rgba(99,102,241,0.15)', color: 'rgb(129,140,248)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                                {userRole === 'OWNER' && <Crown className="w-2.5 h-2.5 mr-1" />}{userRole}
-                            </span>
+                <div className="relative flex flex-col sm:flex-row items-start gap-4">
+                    <div className="flex items-start gap-4 flex-1 w-full">
+                        <Link href="/dashboard">
+                            <button className="mt-1 p-2 rounded-xl hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all border border-white/10 flex-shrink-0">
+                                <ArrowLeft className="w-4 h-4" />
+                            </button>
+                        </Link>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Sparkles className="w-4 h-4 text-indigo-400" />
+                                <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-widest">Project</span>
+                            </div>
+                            <h1 className="text-2xl font-bold gradient-text truncate">{project.name}</h1>
+                            {project.description && <p className="text-muted-foreground text-sm mt-1 max-w-xl">{project.description}</p>}
+                            <div className="flex items-center gap-2 sm:gap-3 mt-3 flex-wrap">
+                                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-muted-foreground">
+                                    <Users className="w-3 h-3" />{project.members.length} members
+                                </span>
+                                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-muted-foreground">
+                                    <Key className="w-3 h-3" />{credentials.length} credentials
+                                </span>
+                                <span className="tag-pill" style={{ background: 'rgba(99,102,241,0.15)', color: 'rgb(129,140,248)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                                    {userRole === 'OWNER' && <Crown className="w-2.5 h-2.5 mr-1" />}{userRole}
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex flex-wrap gap-2 flex-shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                         {(userRole === 'OWNER' || userRole === 'ADMIN') && (
                             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                 onClick={() => setShowInviteModal(true)}
-                                className="flex items-center gap-2 px-3.5 py-2 border border-white/15 rounded-xl text-sm hover:bg-white/10 transition-all text-foreground"
+                                className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-3.5 py-2.5 sm:py-2 border border-white/15 rounded-xl text-sm hover:bg-white/10 transition-all text-foreground"
                             ><UserPlus className="w-4 h-4" /> Invite</motion.button>
                         )}
                         <motion.button whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(99,102,241,0.4)' }} whileTap={{ scale: 0.98 }}
                             onClick={() => setShowAddCredential(true)}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/25"
+                            className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-3.5 py-2.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/25"
                         ><Plus className="w-4 h-4" /> Add Credential</motion.button>
                     </div>
                 </div>
@@ -1330,7 +1332,7 @@ export default function ProjectDetailPage() {
                     )}
                 </div>
             )}
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/50 border border-border mb-6 w-fit">
+            <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/50 border border-border mb-6 w-full sm:w-fit overflow-x-auto scrollbar-none">
                 {([
                     { id: 'credentials', label: 'Credentials', count: credentials.length, icon: Key },
                     { id: 'members', label: 'Members', count: project.members.length, icon: Users },

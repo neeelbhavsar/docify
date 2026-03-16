@@ -123,7 +123,7 @@ export default function DashboardPage() {
     return (
         <div className="max-w-6xl mx-auto">
             {/* Header */}
-            <div className="flex items-start justify-between mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8 sm:mb-10">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <motion.div
@@ -135,7 +135,7 @@ export default function DashboardPage() {
                         </motion.div>
                         <span className="text-xs font-semibold text-indigo-400 uppercase tracking-widest">Your Workspace</span>
                     </div>
-                    <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Projects</h1>
                     <p className="text-muted-foreground text-sm mt-1.5">
                         {loading ? 'Loading...' : `${projects.length} project${projects.length !== 1 ? 's' : ''} · Securely manage all environments`}
                     </p>

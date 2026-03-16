@@ -2,11 +2,11 @@
 
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
-import { Sun, Moon, LogOut, Bell } from 'lucide-react';
+import { Sun, Moon, LogOut, Bell, Menu } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 
-export function Topbar() {
+export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
     const { theme, setTheme } = useTheme();
     const { user, clearAuth } = useAuthStore();
     const router = useRouter();
@@ -17,7 +17,15 @@ export function Topbar() {
     };
 
     return (
-        <header className="h-14 flex items-center gap-4 px-6 border-b border-border bg-card/50 backdrop-blur-sm">
+        <header className="h-14 flex items-center gap-4 px-4 md:px-6 border-b border-border bg-card/50 backdrop-blur-sm">
+            {/* Mobile Menu Button */}
+            <button 
+                onClick={onMenuClick}
+                className="lg:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
+            >
+                <Menu className="w-5 h-5" />
+            </button>
+
             {/* Search placeholder */}
             <div className="flex-1" />
 

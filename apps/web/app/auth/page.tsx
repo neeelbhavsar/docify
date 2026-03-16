@@ -23,8 +23,13 @@ const registerSchema = loginSchema.extend({
     path: ['confirmPassword'],
 });
 
+const forgotPasswordSchema = z.object({
+    email: z.string().email('Invalid email address'),
+});
+
 type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
+type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
 // Animated floating orb
 function Orb({ className }: { className: string }) {
@@ -38,15 +43,17 @@ function Orb({ className }: { className: string }) {
 }
 
 export default function AuthPage() {
-    const [mode, setMode] = useState<'login' | 'register'>('login');
+    const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const router = useRouter();
     const setAuth = useAuthStore((s) => s.setAuth);
 
     const loginForm = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
     const registerForm = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) });
+    const forgotForm = useForm<ForgotPasswordForm>({ resolver: zodResolver(forgotPasswordSchema) });
 
     const handleLogin = async (data: LoginForm) => {
         setIsLoading(true);
@@ -79,11 +86,32 @@ export default function AuthPage() {
         }
     };
 
-    const toggleMode = () => {
-        setMode((m) => (m === 'login' ? 'register' : 'login'));
+    const handleForgotPassword = async (data: ForgotPasswordForm) => {
+        setIsLoading(true);
         setError('');
+        setSuccessMessage('');
+        try {
+            await authService.forgotPassword(data.email);
+            setSuccessMessage('Password reset link sent! Check your given email.');
+            setTimeout(() => setMode('login'), 3000);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to send reset link.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const toggleMode = (newMode?: 'login' | 'register' | 'forgot') => {
+        if (newMode) {
+            setMode(newMode);
+        } else {
+            setMode((m) => (m === 'login' ? 'register' : 'login'));
+        }
+        setError('');
+        setSuccessMessage('');
         loginForm.reset();
         registerForm.reset();
+        forgotForm.reset();
     };
 
     return (
@@ -127,22 +155,24 @@ export default function AuthPage() {
                     </div>
 
                     {/* Mode toggle tabs */}
-                    <div className="flex rounded-xl bg-white/5 p-1 mb-8">
-                        {(['login', 'register'] as const).map((m) => (
-                            <button
-                                key={m}
-                                onClick={() => setMode(m)}
-                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 capitalize ${mode === m
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'text-slate-400 hover:text-white'
-                                    }`}
-                            >
-                                {m === 'login' ? 'Sign In' : 'Sign Up'}
-                            </button>
-                        ))}
-                    </div>
+                    {mode !== 'forgot' && (
+                        <div className="flex rounded-xl bg-white/5 p-1 mb-8">
+                            {(['login', 'register'] as const).map((m) => (
+                                <button
+                                    key={m}
+                                    onClick={() => toggleMode(m)}
+                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 capitalize ${mode === m
+                                            ? 'bg-indigo-600 text-white shadow-sm'
+                                            : 'text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    {m === 'login' ? 'Sign In' : 'Sign Up'}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
-                    {/* Error message */}
+                    {/* Error / Success messages */}
                     <AnimatePresence>
                         {error && (
                             <motion.div
@@ -153,6 +183,17 @@ export default function AuthPage() {
                             >
                                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                 {error}
+                            </motion.div>
+                        )}
+                        {successMessage && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm mb-4"
+                            >
+                                <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+                                {successMessage}
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -190,9 +231,20 @@ export default function AuthPage() {
                                     }
                                     {...loginForm.register('password')}
                                 />
+                                
+                                <div className="flex justify-end">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => toggleMode('forgot')}
+                                        className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+                                
                                 <SubmitButton isLoading={isLoading} label="Sign In" />
                             </motion.form>
-                        ) : (
+                        ) : mode === 'register' ? (
                             <motion.form
                                 key="register"
                                 initial={{ opacity: 0, x: 20 }}
@@ -241,12 +293,36 @@ export default function AuthPage() {
                                 />
                                 <SubmitButton isLoading={isLoading} label="Create Account" />
                             </motion.form>
-                        )}
+                        ) : mode === 'forgot' ? (
+                            <motion.form
+                                key="forgot"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.25 }}
+                                onSubmit={forgotForm.handleSubmit(handleForgotPassword)}
+                                className="space-y-4"
+                            >
+                                <div className="text-center mb-6">
+                                    <h3 className="text-lg font-medium text-white mb-2">Reset Password</h3>
+                                    <p className="text-sm text-slate-400">Enter your email and we will send you a reset link.</p>
+                                </div>
+                                <InputField
+                                    label="Email"
+                                    type="email"
+                                    icon={<Mail className="w-4 h-4" />}
+                                    placeholder="you@company.com"
+                                    error={forgotForm.formState.errors.email?.message}
+                                    {...forgotForm.register('email')}
+                                />
+                                <SubmitButton isLoading={isLoading} label="Send Reset Link" />
+                            </motion.form>
+                        ) : null}
                     </AnimatePresence>
 
                     <p className="text-center text-slate-400 text-sm mt-6">
-                        {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                        <button onClick={toggleMode} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                        {mode === 'login' ? "Don't have an account? " : mode === 'register' ? 'Already have an account? ' : 'Remember your password? '}
+                        <button onClick={() => toggleMode(mode === 'login' ? 'register' : 'login')} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
                             {mode === 'login' ? 'Sign up free' : 'Sign in'}
                         </button>
                     </p>

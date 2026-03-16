@@ -14,4 +14,10 @@ export const authService = {
         }),
 
     getMe: () => api.get<ApiResponse<{ user: AuthResponse['user'] }>>('/auth/me'),
+
+    forgotPassword: (email: string) =>
+        api.post<ApiResponse<void>>('/auth/forgot-password', { email }),
+
+    resetPassword: (token: string, password: string) =>
+        api.put<ApiResponse<AuthResponse>>(`/auth/reset-password/${token}`, { password }),
 };
