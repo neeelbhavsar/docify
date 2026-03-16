@@ -18,9 +18,11 @@ app.use(helmet());
 // CORS
 app.use(
     cors({
-        origin: process.env.CORS_ORIGIN
-            ? process.env.CORS_ORIGIN.split(',')
-            : true, // True reflects the request origin
+        origin: (origin, callback) => {
+            // allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+            return callback(null, origin);
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
