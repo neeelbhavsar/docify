@@ -23,6 +23,9 @@ export const projectService = {
     removeMember: (projectId: string, userId: string) =>
         api.delete<ApiResponse>(`/projects/${projectId}/members/${userId}`),
 
-    getActivity: (projectId: string) =>
+    getActivityLog: (projectId: string) =>
         api.get<ApiResponse>(`/projects/${projectId}/activity`),
+
+    getGlobalActivityLog: () =>
+        api.get<ApiResponse>('/activity'),
 };

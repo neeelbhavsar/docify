@@ -8,6 +8,7 @@ import morgan from 'morgan';
 import authRoutes from './routes/auth.routes';
 import projectRoutes from './routes/project.routes';
 import credentialRoutes from './routes/credential.routes';
+import activityRoutes from './routes/activity.routes';
 import { errorHandler } from './utils/errors';
 
 const app: Application = express();
@@ -59,6 +60,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/activity', activityRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects/:projectId/credentials', credentialRoutes);
 

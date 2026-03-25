@@ -152,20 +152,28 @@ function EditCredentialModal({
     const [loadingData, setLoadingData] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [revealedOnce, setRevealedOnce] = useState(false);
 
-    // Pre-load existing decrypted values when modal opens
+    const handleRevealInModal = async () => {
+        setLoadingData(true);
+        try {
+            const res = await credentialService.reveal(projectId, credential._id);
+            const data = res.data.data?.data || {};
+            setFields(Object.entries(data).map(([key, value]) => ({ key, value })));
+            setRevealedOnce(true);
+        } catch (e: any) {
+            setError('Failed to reveal secret values.');
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    // Pre-load blank fields initially
     useEffect(() => {
-        credentialService.reveal(projectId, credential._id)
-            .then((res) => {
-                const data = res.data.data?.data || {};
-                setFields(Object.entries(data).map(([key, value]) => ({ key, value })));
-            })
-            .catch(() => {
-                setFields(
-                    Array.from({ length: credential.keyCount || 1 }).map(() => ({ key: '', value: '' }))
-                );
-            })
-            .finally(() => setLoadingData(false));
+        setFields(
+            Array.from({ length: credential.keyCount || 1 }).map(() => ({ key: '', value: '' }))
+        );
+        setLoadingData(false);
     }, []);
 
     const addField = () => setFields(f => [...f, { key: '', value: '' }]);
@@ -229,7 +237,19 @@ function EditCredentialModal({
                 {loadingData ? (
                     <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
-                        <span className="ml-2 text-sm text-muted-foreground">Loading existing values…</span>
+                        <span className="ml-2 text-sm text-muted-foreground">Loading…</span>
+                    </div>
+                ) : !revealedOnce ? (
+                    <div className="py-10 text-center border-2 border-dashed border-border rounded-2xl bg-muted/20">
+                        <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                        <p className="text-sm text-muted-foreground mb-4">Values are currently encrypted.</p>
+                        <button
+                            type="button"
+                            onClick={handleRevealInModal}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl text-xs font-bold transition-all"
+                        >
+                            <Eye className="w-3.5 h-3.5" /> Reveal to Edit
+                        </button>
                     </div>
                 ) : (
                     <KeyValueEditor
@@ -389,7 +409,7 @@ function CredentialCard({
                                         <div key={i} className="flex items-center gap-2 p-3 rounded-xl bg-background/30 border border-white/5">
                                             <div className="flex-1">
                                                 <div className="h-1.5 rounded-full w-20 mb-2" style={{ background: `rgba(${glow},0.3)` }} />
-                                                <p className="text-xs font-mono text-muted-foreground tracking-[0.3em]">{maskValue('placeholder-secret-value-here')}</p>
+                                                <p className="text-xs font-mono text-muted-foreground tracking-[0.3em]">••••••••••••</p>
                                             </div>
                                             <Shield className="w-3.5 h-3.5 text-muted-foreground" />
                                         </div>
@@ -930,10 +950,12 @@ export default function ProjectDetailPage() {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviting, setInviting] = useState(false);
-    const [activeTab, setActiveTab] = useState<'credentials' | 'members' | 'download' | 'notes'>('credentials');
+    const [activeTab, setActiveTab] = useState<'credentials' | 'members' | 'download' | 'notes' | 'activity'>('credentials');
     const [downloading, setDownloading] = useState(false);
     const [selectedCredIds, setSelectedCredIds] = useState<Set<string>>(new Set());
     const [revealCache, setRevealCache] = useState<Record<string, Record<string, string>>>({});
+    const [activityLogs, setActivityLogs] = useState<import('@/types').ActivityLog[]>([]);
+    const [loadingActivity, setLoadingActivity] = useState(false);
     const pdfRef = useRef<HTMLDivElement>(null);
 
     const toggleCred = (id: string) => setSelectedCredIds(prev => {
@@ -1213,6 +1235,15 @@ export default function ProjectDetailPage() {
         if (projectId) load();
     }, [projectId, router]);
 
+    useEffect(() => {
+        if (activeTab === 'activity' && projectId) {
+            setLoadingActivity(true);
+            projectService.getActivityLog(projectId)
+                .then(res => setActivityLogs((res.data.data as any) || []))
+                .finally(() => setLoadingActivity(false));
+        }
+    }, [activeTab, projectId]);
+
     const handleDeleteCredential = async (id: string) => {
         if (!confirm('Are you sure you want to delete this credential?')) return;
         await credentialService.delete(projectId, id);
@@ -1336,6 +1367,7 @@ export default function ProjectDetailPage() {
                 {([
                     { id: 'credentials', label: 'Credentials', count: credentials.length, icon: Key },
                     { id: 'members', label: 'Members', count: project.members.length, icon: Users },
+                    { id: 'activity', label: 'Activity', count: null, icon: Clock },
                     { id: 'notes', label: 'Notes', count: null, icon: StickyNote },
                     { id: 'download', label: 'Download', count: null, icon: Download },
                 ] as const).map(tab => (
@@ -1439,6 +1471,68 @@ export default function ProjectDetailPage() {
                     canEdit={userRole === 'OWNER' || userRole === 'ADMIN'}
                     onSaved={(html) => setProject(p => p ? { ...p, notes: html } : p)}
                 />
+            ) : activeTab === 'activity' ? (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                    <div className="relative rounded-2xl overflow-hidden border border-indigo-500/20 p-5"
+                        style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.06))' }}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/30">
+                                <Clock className="w-5 h-5 text-indigo-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold gradient-text">Project Activity</h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">Recent actions and audit logs for this project</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {loadingActivity ? (
+                        <div className="grid grid-cols-1 gap-2">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="h-16 rounded-xl bg-card border border-border animate-pulse" />
+                            ))}
+                        </div>
+                    ) : activityLogs.length === 0 ? (
+                        <div className="text-center py-20 bg-card border border-border rounded-2xl">
+                            <Clock className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                            <p className="text-muted-foreground text-sm">No activity recorded yet.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {activityLogs.map((log, i) => {
+                                const actionColors: Record<string, string> = {
+                                    PROJECT_CREATED: 'bg-green-500/20 text-green-400',
+                                    PROJECT_UPDATED: 'bg-blue-500/20 text-blue-400',
+                                    MEMBER_ADDED: 'bg-indigo-500/20 text-indigo-400',
+                                    MEMBER_REMOVED: 'bg-orange-500/20 text-orange-400',
+                                    CREDENTIAL_CREATED: 'bg-violet-500/20 text-violet-400',
+                                    CREDENTIAL_UPDATED: 'bg-yellow-500/20 text-yellow-400',
+                                    CREDENTIAL_DELETED: 'bg-red-500/20 text-red-400',
+                                    CREDENTIAL_REVEALED: 'bg-cyan-500/20 text-cyan-400',
+                                };
+                                return (
+                                    <motion.div
+                                        key={log._id}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.03 }}
+                                        className="flex items-start gap-4 p-4 rounded-xl border border-border bg-card hover:border-indigo-500/10 transition-all"
+                                    >
+                                        <div className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider flex-shrink-0 mt-0.5 ${actionColors[log.action] || 'bg-gray-500/20 text-gray-400'}`}>
+                                            {log.action.replace(/_/g, ' ')}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-foreground font-semibold">{log.user?.name}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate">{log.user?.email}</p>
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground flex-shrink-0 mt-1">{formatRelativeTime(log.createdAt)}</span>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </motion.div>
             ) : (
                 /* Download Tab */
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">

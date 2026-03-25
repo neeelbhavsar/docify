@@ -27,8 +27,8 @@ export default function ActivityPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        projectService.getActivity(projectId).then((res) => {
-            setLogs((res.data.data as ActivityLog[]) || []);
+        projectService.getActivityLog(projectId).then((res) => {
+            setLogs((res.data.data as any) || []);
         }).finally(() => setLoading(false));
     }, [projectId]);
 
